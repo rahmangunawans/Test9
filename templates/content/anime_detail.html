@@ -1,0 +1,208 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}{{ content.title }} - AniFlix{% endblock %}
+
+{% block content %}
+<div class="min-h-screen">
+    <!-- Hero Section with Trailer -->
+    <div class="relative bg-black">
+        <div class="relative w-full h-64 sm:h-80 md:h-96 lg:h-[500px] overflow-hidden">
+            {% if content.trailer_url %}
+                <!-- Cinematic Autoplay Video -->
+                <div class="absolute inset-0 w-full h-full">
+                    {% if 'youtube.com' in content.trailer_url or 'youtu.be' in content.trailer_url %}
+                        <iframe 
+                            src="{{ content.trailer_url.replace('watch?v=', 'embed/').split('&')[0] }}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&iv_load_policy=3&rel=0&fs=0&disablekb=1&playlist={{ content.trailer_url.split('/')[-1].split('=')[-1] }}"
+                            class="w-full h-full scale-125 -translate-y-12"
+                            frameborder="0"
+                            allow="autoplay; encrypted-media"
+                            style="pointer-events: none;">
+                        </iframe>
+                    {% else %}
+                        <video autoplay muted loop class="w-full h-full object-cover" style="pointer-events: none;">
+                            <source src="{{ content.trailer_url }}" type="video/mp4">
+                        </video>
+                    {% endif %}
+                </div>
+            {% else %}
+                <!-- Fallback Image -->
+                <img src="{{ content.thumbnail_url or '/static/images/placeholder.jpg' }}" 
+                     alt="{{ content.title }}" 
+                     class="w-full h-full object-cover">
+                
+                <!-- Professional Cinematic Overlay -->
+                <div class="absolute inset-0 bg-gradient-to-tr from-black via-black/40 to-transparent"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent"></div>
+            {% endif %}
+        </div>
+
+        <!-- Content Info Overlay -->
+        <div class="absolute bottom-0 left-0 right-0 p-4 sm:p-6 lg:p-8 bg-gradient-to-t from-black to-transparent">
+            <div class="max-w-7xl mx-auto">
+                <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+                    <!-- Title and Info -->
+                    <div class="flex-1">
+                        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">{{ content.title }}</h1>
+                        <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-sm sm:text-base text-gray-300 mb-4">
+                            {% if content.year %}
+                                <span class="bg-gray-800 px-2 py-1 rounded">{{ content.year }}</span>
+                            {% endif %}
+                            {% if content.genre %}
+                                <span class="bg-gray-800 px-2 py-1 rounded">{{ content.genre }}</span>
+                            {% endif %}
+                            {% if content.rating %}
+                                <span class="flex items-center bg-yellow-600 px-2 py-1 rounded">
+                                    <i class="fas fa-star mr-1"></i>{{ "%.1f"|format(content.rating) }}
+                                </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-2 sm:gap-4">
+                        {% if episodes and episodes|length > 0 %}
+                            <a href="{{ url_for('content.watch_episode', episode_id=episodes[0].id) }}" 
+                               class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                                <i class="fas fa-play mr-2"></i>
+                                <span class="hidden sm:inline">Watch Now</span>
+                                <span class="sm:hidden">Watch</span>
+                            </a>
+                        {% endif %}
+                        
+                        <button class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                            <i class="fas fa-plus mr-2"></i>
+                            <span class="hidden sm:inline">Add to List</span>
+                            <span class="sm:hidden">Add</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Details -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Main Content -->
+            <div class="lg:col-span-2">
+                <!-- Description -->
+                {% if content.description %}
+                <div class="bg-gray-800 rounded-lg p-6 mb-8">
+                    <h2 class="text-xl font-semibold text-white mb-4">About {{ content.title }}</h2>
+                    <p class="text-gray-300 leading-relaxed">{{ content.description }}</p>
+                </div>
+                {% endif %}
+
+                <!-- Episodes List -->
+                {% if episodes and episodes|length > 0 %}
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold text-white mb-6">Episodes</h2>
+                    <div class="space-y-3">
+                        {% for episode in episodes %}
+                        <div class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors">
+                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <span class="bg-red-600 text-white px-2 py-1 rounded text-sm font-semibold">
+                                            EP {{ episode.episode_number }}
+                                        </span>
+                                        <h3 class="text-white font-medium">{{ episode.title }}</h3>
+                                    </div>
+                                    {% if episode.description %}
+                                    <p class="text-gray-300 text-sm line-clamp-2">{{ episode.description }}</p>
+                                    {% endif %}
+                                    {% if episode.duration %}
+                                    <p class="text-gray-400 text-xs mt-1">{{ episode.duration }} minutes</p>
+                                    {% endif %}
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    {% if current_user.is_authenticated and not current_user.can_watch_full_episode(episode.episode_number) %}
+                                    <span class="bg-yellow-600 text-white px-2 py-1 rounded text-xs">
+                                        Limited: {{ current_user.get_max_watch_time(episode.episode_number) }}min
+                                    </span>
+                                    {% endif %}
+                                    <a href="{{ url_for('content.watch_episode', episode_id=episode.id) }}" 
+                                       class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                                        <i class="fas fa-play mr-1"></i>
+                                        <span class="hidden sm:inline">Watch</span>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-1">
+                <div class="bg-gray-800 rounded-lg p-6 sticky top-20">
+                    <h3 class="text-lg font-semibold text-white mb-4">Details</h3>
+                    <div class="space-y-3 text-sm">
+                        {% if content.genre %}
+                        <div>
+                            <span class="text-gray-400">Genre:</span>
+                            <span class="text-white ml-2">{{ content.genre }}</span>
+                        </div>
+                        {% endif %}
+                        {% if content.year %}
+                        <div>
+                            <span class="text-gray-400">Year:</span>
+                            <span class="text-white ml-2">{{ content.year }}</span>
+                        </div>
+                        {% endif %}
+                        {% if episodes %}
+                        <div>
+                            <span class="text-gray-400">Episodes:</span>
+                            <span class="text-white ml-2">{{ episodes|length }}</span>
+                        </div>
+                        {% endif %}
+                        {% if content.rating %}
+                        <div>
+                            <span class="text-gray-400">Rating:</span>
+                            <span class="text-yellow-400 ml-2">
+                                <i class="fas fa-star"></i> {{ "%.1f"|format(content.rating) }}/10
+                            </span>
+                        </div>
+                        {% endif %}
+                        <div>
+                            <span class="text-gray-400">Type:</span>
+                            <span class="text-white ml-2 capitalize">{{ content.content_type }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="mt-6 space-y-3">
+                        {% if episodes and episodes|length > 0 %}
+                        <a href="{{ url_for('content.watch_episode', episode_id=episodes[0].id) }}" 
+                           class="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                            <i class="fas fa-play mr-2"></i>Watch Now
+                        </a>
+                        {% endif %}
+                        
+                        <button class="w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                            <i class="fas fa-bookmark mr-2"></i>Add to Watchlist
+                        </button>
+                        
+                        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-semibold transition-colors flex items-center justify-center">
+                            <i class="fas fa-share mr-2"></i>Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+{% endblock %}

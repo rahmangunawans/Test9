@@ -1,1 +1,198 @@
+{% extends "responsive_base.html" %}
 
+{% block title %}{{ content.title }} - Trailer - AniFlix{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-black">
+    <!-- Responsive Video Container -->
+    <div class="relative w-full">
+        <!-- Video Player -->
+        <div class="relative w-full h-screen max-h-screen overflow-hidden">
+            {% if content.trailer_url %}
+                <!-- Main Video Container -->
+                <div class="absolute inset-0 w-full h-full">
+                    <iframe 
+                        src="{{ content.trailer_url }}"
+                        class="w-full h-full"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                
+                <!-- Mobile Controls Overlay -->
+                <div class="absolute top-4 left-4 right-4 sm:hidden">
+                    <div class="flex items-center justify-between">
+                        <a href="{{ url_for('content.anime_detail', content_id=content.id) }}" 
+                           class="bg-black bg-opacity-50 text-white p-2 rounded-full hover:bg-opacity-70">
+                            <i class="fas fa-arrow-left text-lg"></i>
+                        </a>
+                        <div class="bg-black bg-opacity-50 text-white px-3 py-1 rounded-full">
+                            <span class="text-sm font-medium">Trailer</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Desktop Controls Overlay -->
+                <div class="absolute top-6 left-6 right-6 hidden sm:flex items-center justify-between z-10">
+                    <div class="flex items-center space-x-4">
+                        <a href="{{ url_for('content.anime_detail', content_id=content.id) }}" 
+                           class="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg hover:bg-opacity-70 flex items-center">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Back to Details
+                        </a>
+                        <div class="bg-black bg-opacity-50 text-white px-4 py-2 rounded-lg">
+                            <span class="font-medium">{{ content.title }} - Trailer</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        {% if content.year %}
+                        <span class="bg-black bg-opacity-50 text-white px-3 py-1 rounded text-sm">{{ content.year }}</span>
+                        {% endif %}
+                        {% if content.rating %}
+                        <span class="bg-yellow-600 text-white px-3 py-1 rounded text-sm flex items-center">
+                            <i class="fas fa-star mr-1"></i>{{ "%.1f"|format(content.rating) }}
+                        </span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Bottom Action Bar -->
+                <div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black via-black to-transparent p-4 sm:p-6">
+                    <div class="max-w-4xl mx-auto">
+                        <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                            <!-- Content Info -->
+                            <div class="flex-1 text-center sm:text-left">
+                                <h1 class="text-white text-xl sm:text-2xl font-bold mb-2">{{ content.title }}</h1>
+                                {% if content.description %}
+                                <p class="text-gray-300 text-sm sm:text-base line-clamp-2">{{ content.description }}</p>
+                                {% endif %}
+                                <div class="flex flex-wrap items-center justify-center sm:justify-start gap-2 mt-2">
+                                    {% if content.genre %}
+                                    <span class="bg-gray-700 text-white px-2 py-1 rounded text-xs">{{ content.genre }}</span>
+                                    {% endif %}
+                                    {% if content.year %}
+                                    <span class="bg-gray-700 text-white px-2 py-1 rounded text-xs">{{ content.year }}</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                                {% set episodes = content.episodes %}
+                                {% if episodes and episodes|length > 0 %}
+                                <a href="{{ url_for('content.watch_episode', episode_id=episodes[0].id) }}" 
+                                   class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center min-w-[120px]">
+                                    <i class="fas fa-play mr-2"></i>
+                                    Watch Now
+                                </a>
+                                {% endif %}
+                                
+                                <a href="{{ url_for('content.anime_detail', content_id=content.id) }}" 
+                                   class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center min-w-[120px]">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    More Info
+                                </a>
+                                
+                                <button class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors flex items-center justify-center min-w-[120px]">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    My List
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% else %}
+                <!-- No Trailer Available -->
+                <div class="flex items-center justify-center h-screen bg-gray-900">
+                    <div class="text-center">
+                        <i class="fas fa-film text-gray-600 text-6xl mb-4"></i>
+                        <h2 class="text-white text-2xl font-bold mb-4">Trailer Not Available</h2>
+                        <p class="text-gray-400 mb-6">Sorry, no trailer is available for this content.</p>
+                        <div class="space-y-3">
+                            <a href="{{ url_for('content.anime_detail', content_id=content.id) }}" 
+                               class="inline-block bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors">
+                                <i class="fas fa-arrow-left mr-2"></i>Back to Details
+                            </a>
+                            {% set episodes = content.episodes %}
+                            {% if episodes and episodes|length > 0 %}
+                            <a href="{{ url_for('content.watch_episode', episode_id=episodes[0].id) }}" 
+                               class="inline-block bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors ml-3">
+                                <i class="fas fa-play mr-2"></i>Watch Episodes
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+    
+    /* Hide scrollbars for cleaner look */
+    body {
+        overflow: hidden;
+    }
+    
+    /* Mobile optimizations */
+    @media (max-width: 640px) {
+        .min-w-\[120px\] {
+            min-width: 100px;
+        }
+    }
+    
+    /* Ensure full screen on mobile */
+    @media (max-width: 768px) {
+        .h-screen {
+            height: 100vh;
+            height: 100dvh; /* Dynamic viewport height for mobile */
+        }
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle mobile back button
+    if (window.history.length > 1) {
+        const backButtons = document.querySelectorAll('[href*="anime_detail"]');
+        backButtons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                if (window.history.length > 1) {
+                    e.preventDefault();
+                    window.history.back();
+                }
+            });
+        });
+    }
+    
+    // Handle fullscreen on mobile
+    function toggleFullscreen() {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen().catch(err => {
+                console.log(`Error attempting to enable fullscreen: ${err.message}`);
+            });
+        }
+    }
+    
+    // Auto-fullscreen on mobile when video starts playing
+    if (window.innerWidth <= 768) {
+        const iframe = document.querySelector('iframe');
+        if (iframe) {
+            iframe.addEventListener('load', function() {
+                setTimeout(toggleFullscreen, 1000);
+            });
+        }
+    }
+});
+</script>
+{% endblock %}
