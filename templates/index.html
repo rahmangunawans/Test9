@@ -1,0 +1,440 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}AniFlix - Premium Anime & Movie Streaming{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/video-hero.css') }}">
+<script src="{{ url_for('static', filename='js/carousel.js') }}" defer></script>
+{% endblock %}
+
+{% block content %}
+    <!-- Hero Section -->
+    <section class="hero-gradient pt-24 pb-20 md:pt-32 md:pb-28">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="md:flex items-center md:space-x-12">
+                <div class="md:w-1/2 mb-12 md:mb-0">
+                    <h1 class="text-4xl md:text-6xl font-bold leading-tight mb-6">Unlimited <span
+                            class="text-red-500">Anime</span> & <span class="text-red-500">Movies</span></h1>
+                    <p class="text-lg text-gray-300 mb-10">Stream thousands of anime series and movies in HD quality. New
+                        episodes added daily!</p>
+                    <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-10">
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('content.anime_list') }}"
+                                class="bg-white text-slate-900 px-10 py-4 rounded-lg text-lg font-bold flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg">
+                                <i class="fas fa-play mr-3"></i> Continue Watching
+                            </a>
+                            <a href="{{ url_for('dashboard') }}"
+                                class="bg-slate-700/60 backdrop-blur-sm text-white px-10 py-4 rounded-lg text-lg font-semibold flex items-center justify-center hover:bg-slate-600/60 transition-colors border border-slate-600">
+                                <i class="fas fa-tachometer-alt mr-3"></i> Dashboard
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('content.anime_list') }}"
+                                class="bg-white text-slate-900 px-10 py-4 rounded-lg text-lg font-bold flex items-center justify-center hover:bg-gray-100 transition-colors shadow-lg">
+                                <i class="fas fa-play mr-3"></i> Start Watching
+                            </a>
+                            <a href="{{ url_for('subscription.subscription_page') }}"
+                                class="bg-slate-700/60 backdrop-blur-sm text-white px-10 py-4 rounded-lg text-lg font-semibold flex items-center justify-center hover:bg-slate-600/60 transition-colors border border-slate-600">
+                                <i class="fas fa-crown mr-3"></i> Go Premium
+                            </a>
+                        {% endif %}
+                    </div>
+                    <div class="flex items-center space-x-6">
+                        <div class="flex items-center">
+                            <i class="fas fa-star text-yellow-400 mr-1"></i>
+                            <span class="text-white font-semibold">4.9/5</span>
+                        </div>
+                        <span class="text-gray-400">•</span>
+                        <span class="text-gray-300 font-medium">10,000+ Titles</span>
+                        <span class="text-gray-400">•</span>
+                        <span class="text-gray-300 font-medium">HD Quality</span>
+                    </div>
+                </div>
+                <div class="md:w-1/2 relative">
+                    <!-- Hero Carousel -->
+                    <div class="hero-carousel relative w-full aspect-video rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.6)]">
+                        {% if featured_content %}
+                            {% for content in featured_content[:3] %}
+                            <div class="hero-carousel-slide {% if loop.first %}active{% endif %} absolute inset-0 w-full h-full transition-all duration-700 ease-in-out" style="{% if not loop.first %}transform: translateX(100%);{% endif %}">
+                                {% if content.trailer_url and 'youtube.com' in content.trailer_url %}
+                                    <!-- Video Background -->
+                                    <div class="absolute inset-0 w-full h-full">
+                                        <iframe 
+                                            class="w-full h-full scale-125 -translate-y-6"
+                                            src="{{ content.trailer_url.replace('watch?v=', 'embed/').split('&')[0] }}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&iv_load_policy=3&rel=0&fs=0&disablekb=1&playlist={{ content.trailer_url.split('/')[-1].split('=')[-1] }}"
+                                            frameborder="0"
+                                            allow="autoplay; encrypted-media"
+                                            style="pointer-events: none; filter: brightness(0.75) contrast(1.1);">
+                                        </iframe>
+                                    </div>
+                                {% elif content.trailer_url %}
+                                    <video autoplay muted loop class="w-full h-full object-cover" style="pointer-events: none; filter: brightness(0.75) contrast(1.1);">
+                                        <source src="{{ content.trailer_url }}" type="video/mp4">
+                                    </video>
+                                {% else %}
+                                    <img src="{{ content.thumbnail_url }}" alt="{{ content.title }}" class="w-full h-full object-cover">
+                                {% endif %}
+                                
+                                <!-- Consistent Dark Overlay -->
+                                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+                                <div class="absolute inset-0 bg-gradient-to-r from-slate-900/70 via-transparent to-transparent"></div>
+                                
+                                <!-- Content Overlay -->
+                                <div class="absolute bottom-0 left-0 right-0 p-4 sm:p-6">
+                                    <div class="max-w-2xl">
+                                        <h3 class="text-xl sm:text-2xl md:text-3xl font-bold text-white mb-2 sm:mb-3 leading-tight">{{ content.title }}</h3>
+                                        <div class="flex items-center space-x-2 sm:space-x-3 mb-3 sm:mb-4">
+                                            <span class="bg-red-600 text-white text-xs px-2 sm:px-3 py-1 rounded-full font-semibold">NEW</span>
+                                            <span class="text-gray-200 text-xs sm:text-sm">Latest Episode</span>
+                                            <div class="flex items-center bg-slate-800/60 backdrop-blur-sm px-2 py-1 rounded-full">
+                                                <i class="fas fa-star text-yellow-400 text-xs mr-1"></i>
+                                                <span class="text-white text-xs sm:text-sm font-semibold">{{ "%.1f"|format(content.rating) }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center space-x-2 sm:space-x-3">
+                                            <a href="{{ url_for('content.anime_detail', content_id=content.id) }}" 
+                                               class="bg-white text-slate-900 px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-bold hover:bg-gray-100 transition-colors flex items-center text-xs sm:text-sm">
+                                                <i class="fas fa-play mr-1 sm:mr-2"></i>Play
+                                            </a>
+                                            <a href="{{ url_for('content.anime_detail', content_id=content.id) }}" 
+                                               class="bg-slate-700/60 backdrop-blur-sm text-white px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg font-semibold hover:bg-slate-600/60 transition-colors flex items-center border border-slate-600 text-xs sm:text-sm">
+                                                <i class="fas fa-info-circle mr-1 sm:mr-2"></i>More Info
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            
+                            <!-- Navigation Arrows -->
+                            {% if featured_content|length > 1 %}
+                            <button type="button" class="hero-carousel-prev absolute top-1/2 -translate-y-1/2 left-2 sm:left-4 bg-slate-800/60 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-slate-700/60 transition-colors" style="z-index: 100; cursor: pointer;" onclick="event.stopPropagation();">
+                                <i class="fas fa-chevron-left text-sm sm:text-base"></i>
+                            </button>
+                            <button type="button" class="hero-carousel-next absolute top-1/2 -translate-y-1/2 right-2 sm:right-4 bg-slate-800/60 backdrop-blur-sm text-white p-2 sm:p-3 rounded-full hover:bg-slate-700/60 transition-colors" style="z-index: 100; cursor: pointer;" onclick="event.stopPropagation();">
+                                <i class="fas fa-chevron-right text-sm sm:text-base"></i>
+                            </button>
+                            
+                            <!-- Indicators -->
+                            <div class="absolute bottom-2 sm:bottom-4 left-1/2 -translate-x-1/2" style="z-index: 100;">
+                                <div class="flex space-x-2">
+                                    {% for content in featured_content[:3] %}
+                                    <button type="button" class="hero-carousel-indicator w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-colors {% if loop.first %}bg-white{% else %}bg-white/30{% endif %} hover:bg-white/60" onclick="event.stopPropagation();"></button>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Anime -->
+    {% if featured_content %}
+    <section class="py-12 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Featured Anime</h2>
+                <a href="{{ url_for('content.anime_list') }}" class="text-red-500 hover:text-red-400 flex items-center">
+                    View All <i class="fas fa-chevron-right ml-1"></i>
+                </a>
+            </div>
+
+            <div class="relative">
+                <div class="carousel flex overflow-x-auto space-x-6 pb-6 scrollbar-hide">
+                    {% for content in featured_content %}
+                    <div class="carousel-item w-48 flex-shrink-0">
+                        <div
+                            class="bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-all duration-300 card-hover">
+                            <div class="relative">
+                                <img src="{{ content.thumbnail_url }}" alt="{{ content.title }}" class="w-full h-64 object-cover">
+                                <div
+                                    class="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                                    {% if content.content_type == 'anime' %}ANIME{% else %}MOVIE{% endif %}
+                                </div>
+                                <div class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-0 hover:opacity-80 transition-opacity duration-300 flex items-center justify-center">
+                                    <a href="{{ url_for('content.anime_detail', content_id=content.id) }}"
+                                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full">
+                                        <i class="fas fa-play"></i>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold text-white mb-1 truncate">{{ content.title }}</h3>
+                                <div class="flex items-center text-gray-400 text-sm">
+                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                    <span>{{ content.rating }}</span>
+                                    <span class="mx-2">•</span>
+                                    <span>{{ content.year }}</span>
+                                </div>
+                                <div class="mt-2 flex flex-wrap gap-1">
+                                    {% for genre in content.genre.split(', ')[:2] %}
+                                    <span
+                                        class="genre-tag bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">{{ genre }}</span>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button
+                    class="carousel-prev absolute left-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 hidden md:block">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button
+                    class="carousel-next absolute right-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 hidden md:block">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Latest Content -->
+    {% if latest_content %}
+    <section class="py-12 bg-gray-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Latest Releases</h2>
+                <a href="{{ url_for('content.anime_list') }}" class="text-red-500 hover:text-red-400 flex items-center">
+                    View All <i class="fas fa-chevron-right ml-1"></i>
+                </a>
+            </div>
+
+            <div class="relative">
+                <div class="carousel flex overflow-x-auto space-x-6 pb-6 scrollbar-hide">
+                    {% for content in latest_content %}
+                    <div class="carousel-item w-48 flex-shrink-0">
+                        <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-all duration-300 card-hover">
+                            <div class="relative">
+                                <img src="{{ content.thumbnail_url }}" alt="{{ content.title }}" class="w-full h-64 object-cover">
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-0 hover:opacity-80 transition-opacity duration-300 flex items-center justify-center">
+                                    <a href="{{ url_for('content.anime_detail', content_id=content.id) }}"
+                                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full">
+                                        <i class="fas fa-play"></i>
+                                    </a>
+                                </div>
+                                <div class="absolute top-2 right-2 bg-black bg-opacity-70 text-white text-xs px-2 py-1 rounded">
+                                    NEW
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold text-white mb-1 truncate">{{ content.title }}</h3>
+                                <div class="flex items-center text-gray-400 text-sm">
+                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                    <span>{{ content.rating }}</span>
+                                    <span class="mx-2">•</span>
+                                    <span>{{ content.year }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button
+                    class="carousel-prev-latest absolute left-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 hidden md:block">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button
+                    class="carousel-next-latest absolute right-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 hidden md:block">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Popular Content -->
+    {% if popular_content %}
+    <section class="py-12 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between mb-8">
+                <h2 class="text-2xl font-bold">Popular This Week</h2>
+                <a href="{{ url_for('content.anime_list') }}" class="text-red-500 hover:text-red-400 flex items-center">
+                    View All <i class="fas fa-chevron-right ml-1"></i>
+                </a>
+            </div>
+
+            <div class="relative">
+                <div class="carousel flex overflow-x-auto space-x-6 pb-6 scrollbar-hide">
+                    {% for content in popular_content %}
+                    <div class="carousel-item w-48 flex-shrink-0">
+                        <div class="bg-gray-800 rounded-lg overflow-hidden shadow-lg transition-all duration-300 card-hover">
+                            <div class="relative">
+                                <img src="{{ content.thumbnail_url }}" alt="{{ content.title }}" class="w-full h-64 object-cover">
+                                <div
+                                    class="absolute inset-0 bg-gradient-to-t from-black to-transparent opacity-0 hover:opacity-80 transition-opacity duration-300 flex items-center justify-center">
+                                    <a href="{{ url_for('content.anime_detail', content_id=content.id) }}"
+                                        class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-full">
+                                        <i class="fas fa-play"></i>
+                                    </a>
+                                </div>
+                                <div class="absolute top-2 left-2 bg-red-600 text-white text-xs px-2 py-1 rounded">
+                                    HOT
+                                </div>
+                            </div>
+                            <div class="p-4">
+                                <h3 class="font-semibold text-white mb-1 truncate">{{ content.title }}</h3>
+                                <div class="flex items-center text-gray-400 text-sm">
+                                    <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                    <span>{{ content.rating }}</span>
+                                    <span class="mx-2">•</span>
+                                    <span>{{ content.year }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button
+                    class="carousel-prev-popular absolute left-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 hidden md:block">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <button
+                    class="carousel-next-popular absolute right-0 top-1/2 transform -translate-y-1/2 bg-black bg-opacity-60 text-white p-2 rounded-full hover:bg-opacity-80 hidden md:block">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Features -->
+    <section class="py-20 bg-gray-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-3xl md:text-4xl font-bold text-center mb-16">Why Choose AniFlix?</h2>
+
+            <div class="grid md:grid-cols-3 gap-10 max-w-6xl mx-auto">
+                <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 text-center shadow-2xl border border-gray-700 transition-all duration-300 hover:transform hover:scale-105">
+                    <div
+                        class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <i class="fas fa-tv text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-white">HD Streaming</h3>
+                    <p class="text-gray-300 leading-relaxed">Enjoy your favorite anime and movies in crystal clear HD quality with no
+                        buffering and lightning-fast load times.</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 text-center shadow-2xl border border-gray-700 transition-all duration-300 hover:transform hover:scale-105">
+                    <div
+                        class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <i class="fas fa-bolt text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-white">Fast Updates</h3>
+                    <p class="text-gray-300 leading-relaxed">New episodes added within hours of their Japanese broadcast with multiple
+                        subtitle options and instant notifications.</p>
+                </div>
+
+                <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-8 text-center shadow-2xl border border-gray-700 transition-all duration-300 hover:transform hover:scale-105">
+                    <div
+                        class="bg-gradient-to-r from-red-600 to-red-700 text-white p-4 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6 shadow-lg">
+                        <i class="fas fa-mobile-alt text-3xl"></i>
+                    </div>
+                    <h3 class="text-2xl font-bold mb-4 text-white">Watch Anywhere</h3>
+                    <p class="text-gray-300 leading-relaxed">Stream on your phone, tablet, laptop, or TV with our dedicated apps for all
+                        platforms with seamless synchronization.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    {% if not current_user.is_authenticated %}
+    <section class="py-16 hero-gradient">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold mb-6">Ready to Start Streaming?</h2>
+            <p class="text-xl text-gray-300 mb-8 max-w-3xl mx-auto">Join thousands of anime fans enjoying unlimited
+                access to the best anime and movies anywhere, anytime.</p>
+            <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+                <button data-login
+                    class="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full text-lg font-semibold">
+                    Start Your Free Trial
+                </button>
+                <a href="{{ url_for('subscription.subscription_page') }}"
+                    class="bg-white hover:bg-gray-200 text-gray-900 px-8 py-3 rounded-full text-lg font-semibold">
+                    Learn About Plans
+                </a>
+            </div>
+        </div>
+    </section>
+    {% endif %}
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Featured Anime carousel functionality
+    const carousel = document.querySelector('.carousel');
+    const prevBtn = document.querySelector('.carousel-prev');
+    const nextBtn = document.querySelector('.carousel-next');
+
+    if (carousel && prevBtn && nextBtn) {
+        prevBtn.addEventListener('click', () => {
+            carousel.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+
+        nextBtn.addEventListener('click', () => {
+            carousel.scrollBy({ left: 300, behavior: 'smooth' });
+        });
+    }
+
+    // Latest Releases carousel functionality
+    const latestCarousels = document.querySelectorAll('.carousel');
+    const latestPrevBtn = document.querySelector('.carousel-prev-latest');
+    const latestNextBtn = document.querySelector('.carousel-next-latest');
+
+    if (latestCarousels.length > 1 && latestPrevBtn && latestNextBtn) {
+        const latestCarousel = latestCarousels[1]; // Second carousel is Latest Releases
+        latestPrevBtn.addEventListener('click', () => {
+            latestCarousel.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+
+        latestNextBtn.addEventListener('click', () => {
+            latestCarousel.scrollBy({ left: 300, behavior: 'smooth' });
+        });
+    }
+
+    // Popular Content carousel functionality
+    const popularPrevBtn = document.querySelector('.carousel-prev-popular');
+    const popularNextBtn = document.querySelector('.carousel-next-popular');
+
+    if (latestCarousels.length > 2 && popularPrevBtn && popularNextBtn) {
+        const popularCarousel = latestCarousels[2]; // Third carousel is Popular Content
+        popularPrevBtn.addEventListener('click', () => {
+            popularCarousel.scrollBy({ left: -300, behavior: 'smooth' });
+        });
+
+        popularNextBtn.addEventListener('click', () => {
+            popularCarousel.scrollBy({ left: 300, behavior: 'smooth' });
+        });
+    }
+
+    // Add smooth animations on scroll
+    const observerOptions = {
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, observerOptions);
+
+    // Observe all content cards
+    document.querySelectorAll('.card-hover').forEach((card) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
+        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+        observer.observe(card);
+    });
+});
+</script>
+{% endblock %}

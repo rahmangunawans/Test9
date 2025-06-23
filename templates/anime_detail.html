@@ -1,0 +1,306 @@
+{% extends "responsive_base.html" %}
+
+{% block title %}{{ anime.title }} - AniFlix{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/video-hero.css') }}">
+{% endblock %}
+
+{% block content %}
+<section class="pt-16 bg-gray-900 min-h-screen">
+    <!-- Netflix-Style Hero Section -->
+    <div class="relative h-[70vh] bg-black">
+        {% if anime.trailer_url %}
+            <!-- Full Background Video -->
+            <div class="absolute inset-0 w-full h-full overflow-hidden">
+                {% if 'youtube.com' in anime.trailer_url or 'youtu.be' in anime.trailer_url %}
+                    <iframe 
+                        src="{{ anime.trailer_url.replace('watch?v=', 'embed/').split('&')[0] }}?autoplay=1&mute=1&loop=1&controls=0&showinfo=0&modestbranding=1&iv_load_policy=3&rel=0&fs=0&disablekb=1&playlist={{ anime.trailer_url.split('/')[-1].split('=')[-1] }}"
+                        class="w-full h-full scale-125"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                        style="pointer-events: none; filter: brightness(0.7) contrast(1.2);">
+                    </iframe>
+                {% else %}
+                    <video autoplay muted loop class="w-full h-full object-cover" style="pointer-events: none; filter: brightness(0.7) contrast(1.2);">
+                        <source src="{{ anime.trailer_url }}" type="video/mp4">
+                    </video>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+        <!-- Consistent Gradient Overlays -->
+        <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
+        <div class="absolute inset-0 bg-gradient-to-r from-slate-900/80 via-transparent to-transparent"></div>
+        
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-end pb-16">
+            <div class="flex items-end space-x-8 max-w-4xl">
+                <div class="hidden md:block">
+                    <img src="{{ anime.thumbnail_url }}" alt="{{ anime.title }}" 
+                         class="w-48 h-72 object-cover rounded-xl shadow-2xl border border-white/10">
+                </div>
+                <div class="flex-1">
+                    <nav class="text-sm text-gray-400 mb-4 flex items-center space-x-2">
+                        <a href="{{ url_for('index') }}" class="hover:text-white transition-colors">Home</a>
+                        <i class="fas fa-chevron-right text-xs"></i>
+                        <a href="{{ url_for('content.anime_list') }}" class="hover:text-white transition-colors">Anime</a>
+                        <i class="fas fa-chevron-right text-xs"></i>
+                        <span class="text-white font-medium">{{ anime.title }}</span>
+                    </nav>
+                    
+                    <h1 class="text-5xl md:text-7xl font-black text-white mb-6 leading-tight">{{ anime.title }}</h1>
+                    
+                    <div class="flex flex-wrap items-center gap-4 mb-6">
+                        <div class="flex items-center bg-yellow-500/20 backdrop-blur-sm px-4 py-2 rounded-full border border-yellow-500/30">
+                            <i class="fas fa-star text-yellow-400 mr-2"></i>
+                            <span class="text-white font-bold text-lg">{{ "%.1f"|format(anime.rating) }}</span>
+                        </div>
+                        <span class="text-gray-300 font-semibold text-lg">{{ anime.year }}</span>
+                        <span class="text-gray-300 font-semibold text-lg">{{ episodes|length }} Episodes</span>
+                        {% if anime.is_featured %}
+                            <span class="bg-red-600 text-white text-sm px-4 py-2 rounded-full font-bold">FEATURED</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="flex flex-wrap gap-3 mb-6">
+                        {% for genre in anime.genre.split(', ') %}
+                            <span class="bg-slate-700/60 backdrop-blur-sm text-white text-sm px-4 py-2 rounded-full font-medium border border-slate-600">{{ genre }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <p class="text-gray-200 max-w-3xl text-lg leading-relaxed mb-8">{{ anime.description }}</p>
+                    
+                    <!-- Action Buttons -->
+                    <div class="flex flex-wrap gap-4">
+                        {% if episodes %}
+                            {% set first_episode = episodes[0] %}
+                            {% if current_user.is_authenticated %}
+                                <a href="{{ url_for('content.watch_episode', episode_id=first_episode.id) }}" 
+                                   class="bg-white text-slate-900 px-10 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors flex items-center">
+                                    <i class="fas fa-play mr-3"></i>Play
+                                </a>
+                            {% else %}
+                                <a href="{{ url_for('auth.login') }}" 
+                                   class="bg-white text-slate-900 px-10 py-4 rounded-lg font-bold text-lg hover:bg-gray-100 transition-colors flex items-center">
+                                    <i class="fas fa-play mr-3"></i>Sign In to Watch
+                                </a>
+                            {% endif %}
+                        {% endif %}
+                        
+                        <button onclick="addToWatchlist({{ anime.id }})" 
+                                class="bg-slate-700/60 backdrop-blur-sm text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-slate-600/60 transition-colors flex items-center border border-slate-600">
+                            <i class="fas fa-bookmark mr-3"></i>Add to List
+                        </button>
+                        
+                        <button onclick="shareAnime()" 
+                                class="bg-slate-700/60 backdrop-blur-sm text-white px-8 py-4 rounded-lg font-semibold text-lg hover:bg-slate-600/60 transition-colors flex items-center border border-slate-600">
+                            <i class="fas fa-share mr-3"></i>Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Episodes Section -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Episodes List -->
+            <div class="lg:col-span-2">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-white">Episodes</h2>
+                        {% if not current_user.is_authenticated or not current_user.is_vip() %}
+                            <div class="text-sm text-gray-400">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                Episodes 1-5 free • Episodes 6+ require VIP
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="space-y-3 max-h-96 overflow-y-auto">
+                        {% for episode in episodes %}
+                        <div class="flex items-center p-4 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+                            <div class="w-16 h-12 bg-gray-900 rounded mr-4 flex items-center justify-center text-sm text-white font-medium">
+                                {{ episode.episode_number }}
+                            </div>
+                            
+                            <div class="flex-1 min-w-0">
+                                <h3 class="text-white font-medium truncate">{{ episode.title }}</h3>
+                                <div class="flex items-center text-gray-400 text-sm mt-1">
+                                    <span>{{ episode.duration }} min</span>
+                                    {% if user_progress.get(episode.id) %}
+                                        <span class="mx-2">•</span>
+                                        {% if user_progress[episode.id].completed %}
+                                            <span class="text-green-400">
+                                                <i class="fas fa-check mr-1"></i>Completed
+                                            </span>
+                                        {% else %}
+                                            <span class="text-blue-400">
+                                                <i class="fas fa-clock mr-1"></i>{{ (user_progress[episode.id].watch_time / 60)|int }}m watched
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </div>
+                                {% if episode.description %}
+                                    <p class="text-gray-400 text-sm mt-1 truncate">{{ episode.description }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="flex items-center space-x-2">
+                                {% if current_user.is_authenticated %}
+                                    {% if current_user.is_vip() or episode.episode_number <= 5 %}
+                                        <a href="{{ url_for('content.watch_episode', episode_id=episode.id) }}" 
+                                           class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded text-sm font-medium">
+                                            Watch
+                                        </a>
+                                    {% else %}
+                                        <div class="flex items-center text-yellow-400 text-sm">
+                                            <i class="fas fa-lock mr-1"></i>
+                                            <span>VIP Only</span>
+                                        </div>
+                                    {% endif %}
+                                {% else %}
+                                    <a href="{{ url_for('auth.login') }}" 
+                                       class="bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded text-sm font-medium">
+                                        Sign In
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="lg:col-span-1">
+                <!-- Anime Information -->
+                <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Information</h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Type:</span>
+                            <span class="text-white">{{ anime.content_type.title() }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Year:</span>
+                            <span class="text-white">{{ anime.year }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Episodes:</span>
+                            <span class="text-white">{{ episodes|length }}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-400">Rating:</span>
+                            <div class="flex items-center">
+                                <i class="fas fa-star text-yellow-400 mr-1"></i>
+                                <span class="text-white">{{ "%.1f"|format(anime.rating) }}/5</span>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-gray-400">Genres:</span>
+                            <div class="flex flex-wrap gap-1 mt-1">
+                                {% for genre in anime.genre.split(', ') %}
+                                    <span class="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded">{{ genre }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Watch Progress -->
+                {% if current_user.is_authenticated and user_progress %}
+                <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-4">Your Progress</h3>
+                    {% set completed_episodes = user_progress.values() | selectattr('completed') | list | length %}
+                    {% set total_episodes = episodes|length %}
+                    {% set progress_percent = (completed_episodes / total_episodes * 100) if total_episodes > 0 else 0 %}
+                    
+                    <div class="mb-3">
+                        <div class="flex justify-between text-sm mb-1">
+                            <span class="text-gray-400">Episodes Completed</span>
+                            <span class="text-white">{{ completed_episodes }}/{{ total_episodes }}</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-2">
+                            <div class="bg-red-600 h-2 rounded-full" style="width: {{ progress_percent }}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center text-sm text-gray-400">
+                        {{ "%.0f"|format(progress_percent) }}% Complete
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Subscription Prompt -->
+                {% if not current_user.is_authenticated or not current_user.is_vip() %}
+                <div class="bg-gradient-to-r from-red-600 to-purple-600 rounded-lg p-6">
+                    <div class="text-center">
+                        <i class="fas fa-crown text-3xl text-yellow-400 mb-3"></i>
+                        <h3 class="text-lg font-bold text-white mb-2">Unlock All Episodes</h3>
+                        <p class="text-sm text-white opacity-90 mb-4">
+                            {% if current_user.is_authenticated %}
+                                Upgrade to VIP to watch all episodes without limits
+                            {% else %}
+                                Sign up to start watching episodes 1-5 for free
+                            {% endif %}
+                        </p>
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('subscription.subscription_page') }}" 
+                               class="bg-white text-red-600 hover:bg-gray-100 px-6 py-2 rounded-full text-sm font-semibold inline-block">
+                                Upgrade to VIP
+                            </a>
+                        {% else %}
+                            <a href="{{ url_for('auth.login') }}" 
+                               class="bg-white text-red-600 hover:bg-gray-100 px-6 py-2 rounded-full text-sm font-semibold inline-block">
+                                Sign Up Free
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addToWatchlist(animeId) {
+    {% if current_user.is_authenticated %}
+        // In a real app, this would make an API call to add to watchlist
+        showNotification('Added to your watchlist!', 'success');
+    {% else %}
+        showNotification('Please sign in to add to watchlist', 'info');
+        setTimeout(() => {
+            window.location.href = '{{ url_for("auth.login") }}';
+        }, 1500);
+    {% endif %}
+}
+
+function shareAnime() {
+    if (navigator.share) {
+        navigator.share({
+            title: '{{ anime.title }} - AniFlix',
+            text: 'Check out {{ anime.title }} on AniFlix!',
+            url: window.location.href
+        });
+    } else {
+        navigator.clipboard.writeText(window.location.href).then(() => {
+            showNotification('Link copied to clipboard!', 'success');
+        });
+    }
+}
+
+function showNotification(message, type) {
+    if (window.AniFlix && window.AniFlix.showNotification) {
+        window.AniFlix.showNotification(message, type);
+    } else {
+        alert(message);
+    }
+}
+</script>
+{% endblock %}
